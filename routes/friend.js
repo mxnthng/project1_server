@@ -49,20 +49,27 @@ router.get('/friendList',verify, async(req, res) =>{
     try {
         const arr = [];
       
-        const requestFriend = await Friend.find({ $or: [{ sender_id : req.user.id},{ receiver_id : req.user.id}] , status : 1})
+        const requestFriend1 = await Friend.find({ sender_id : req.user.id, status : 1})
                                            .select('receiver_id');
-
-        for(var i = 0; i < requestFriend.length; i++){
-            const rq = await User.findOne({_id : requestFriend[i].receiver_id})
+        const requestFriend2 = await Friend.find({ receiver_id : req.user.id, status : 1})
+                                             .select('sender_id');
+                                            
+        
+        for(var i = 0; i < requestFriend1.length; i++){
+            const rq = await User.findOne({_id : requestFriend1[i].receiver_id})
                                    .select('_id userName email  avatar');
             arr.push(rq);
         }
-        // const user2 = await User.find({_id : requestFriend.user2_id})
-        //                          .select('_id userName email'); 
-       res.json(arr);                                 
-     } catch (error) {
+        for(var i = 0; i < requestFriend2.length; i++){
+            const rq = await User.findOne({_id : requestFriend2[i].sender_id})
+                                   .select('_id userName email  avatar');
+            arr.push(rq);
+        }
+
+        res.json(arr);                                 
+      } catch (error) {
          res.json({message : error});
-     }
+      }
 })
 
 
@@ -94,7 +101,7 @@ router.get('/receiverRq', verify,async(req, res) =>{
 router.get('/search', verify, async(req,res) =>{
     const name = req.body.userName;
     console.log(name);
-    const search = await User.find({userName : new RegExp(name)});
+    const search = await User.findOne({userName : new RegExp(name)});
     res.json(search);
 
 })
@@ -102,7 +109,7 @@ router.get('/search', verify, async(req,res) =>{
 
 
 // agree request 
-router.patch('/agreeRequest', verify, async(req, res) =>{
+router.put('/agreeRequest', verify, async(req, res) =>{
     const receiver_id = req.user.id;
     const { friendId } = req.body;
     await Friend.findOneAndUpdate({ sender_id: friendId, receiver_id }, { status: 1 });
